@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #-------------------------------------------------------------------
 # Filename: setup.py
-#  Purpose: Client for sending SMS with smslisto.com
+#  Purpose: Client for sending SMS via HTML SMSlink
 #   Author: Tom Richter
 #    Email: lorchel@gmx.de
 #  License: GPLv3
@@ -9,11 +9,12 @@
 # Copyright (C) 2012 Tom Richter
 #---------------------------------------------------------------------
 """
-Tool for sending SMS with smslisto.com
-======================================
+Tool for sending SMS via HTML SMSlink
+=====================================
 
 This is a command line utility for sending short messages with the help of
-the website smslisto.com. Now sending a SMS is as far as typing:
+HTML SMSlink. Currently this is possible with the website smslisto.com.
+Now sending a SMS is as far as typing:
 
 send dude "Hey Dude!"
 """
@@ -30,7 +31,6 @@ import urllib
 
 DEBUG = False
 CONFIG_FILENAME = os.path.expanduser(os.path.join('~', '.smsl.cfg'))
-SMSLISTO_URL = 'https://www.smslisto.com/myaccount/sendsms.php?%s'
 EPILOG = """
 At the first start an example configuration file at the path
 %s was created. Feel free to adapt  the file to your needs.
@@ -73,7 +73,7 @@ class BColors:
         self.FAIL = ''
         self.ENDC = ''
 
-class AnswerSMSLISTOHTMLParser(HTMLParser):
+class AnswerSMSLinkParser(HTMLParser):
     tags = ('result', 'resultstring', 'description', 'partcount', 'endcause')
     def __init__(self):
         HTMLParser.__init__(self)
@@ -88,13 +88,13 @@ class AnswerSMSLISTOHTMLParser(HTMLParser):
     def handle_endtag(self, tag):
         self._tag = ''
 
-def send_sms(username, password, fromu, to, message, test=False):
+def send_sms(username, password, fromu, to, message, url, test=False):
     params = urllib.urlencode({'username': username, 'password': password,
                            'from': fromu, 'to': to,
                            'text': message})
-    url = SMSLISTO_URL % params
+    url = url + params
     if test:
-        print('Constructed url:\n % s' % url)
+        print('Constructed url:\n%s' % url)
     else:
         if DEBUG:
             answer = DEBUG_answer
@@ -102,7 +102,7 @@ def send_sms(username, password, fromu, to, message, test=False):
             url_answer = urllib.urlopen(url)
             answer = url_answer.read()
             url_answer.close()
-        parser = AnswerSMSLISTOHTMLParser()
+        parser = AnswerSMSLinkHTMLParser()
         parser.feed(answer)
         parser.close()
         if parser.result == '1':
@@ -121,6 +121,8 @@ def get_config():
     else: # create example config file     
         config.add_section('Settings')
         config.set('Settings', 'default_user', 'example_user')
+        config.set('Settings', 'url', 'https://www.smslisto.com/myaccount/'
+                   'sendsms.php?')
         config.add_section('Contacts')
         config.set('Contacts', 'example_contact', '+number_of_example_contact')
         config.add_section('ContactsCSV')
@@ -220,7 +222,11 @@ def main():
     message = ' '.join(args.message)
     if not message:
         sys.exit('Your message is empty.')
-    send_sms(user, pw, fromu, to, message, test=args.test)
+    try:
+        url = config.get('Settings', 'url', raw=True)
+    except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+        sys.exit('Error when reading url from config file.')
+    send_sms(user, pw, fromu, to, message, url, test=args.test)
 
 
 DEBUG_answer = """

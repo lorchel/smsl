@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #-------------------------------------------------------------------
 # Filename: setup.py
-#  Purpose: Installation script for smsl tool for sending SMS with smslisto.com
+#  Purpose: Installation script for smsl tool for sending SMS via HTML SMSlink
 #   Author: Tom Richter
 #    Email: lorchel@gmx.de
 #  License: GPLv3
@@ -9,11 +9,12 @@
 # Copyright (C) 2012 Tom Richter
 #---------------------------------------------------------------------
 """
-Tool for sending SMS with smslisto.com
-======================================
+Tool for sending SMS via HTML SMSlink
+=====================================
 
 This is a command line utility for sending short messages with the help of
-the website smslisto.com. Now sending a SMS is as far as typing:
+HTML SMSlink. Currently this is possible with the website smslisto.com.
+Now sending a SMS is as far as typing:
 
 send dude "Hey Dude!"
 """
