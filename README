@@ -1,0 +1,55 @@
+Tool for sending SMS with smslisto.com
+======================================
+
+This is a command line utility for sending short messages with the help of
+the website smslisto.com. Now sending a SMS is as far as typing:
+
+send dude "Hey Dude!"
+
+At the first start an example configuration file at the path
+/home/richter/.smsl.cfg was created. Feel free to adapt  the file to your needs.
+You can add new contacts, new users and a csv file which will additionally
+be searched for contacts. All contacts are shared between the users.
+You can add your SMSLISTO username, password and from information, so
+that you don't need to enter it every time you want to send a short message.
+
+If you don't want your password to be saved on your harddisk in plain letters
+you can comment out this option and indicate it with the command line option
+'-p'. Anyway the created link will include your password in plain letters
+and it will be send over your internet connection. This means don't use an
+expensive password on your SMSLISTO account when using this tool. 
+
+By the way you need to be registered at SMSLISTO and you need to have some money
+on your account. The tool uses the HTML SMSlink service.
+The script creates a link like
+https://www.smslisto.com/myaccount/sendsms.php?username=xxxxxxxxxx&
+password=xxxxxxxxxx&from=xxxxxxxxxx&to=xxxxxxxxxx&text=xxxxxxxxxx
+and sends it to smslisto.com.
+
+Give your thumb a break! ;)
+
+
+Requirements
+------------
+    * python 2.7 or python 3.2
+
+Installation
+------------
+Clone or download (ZIP button on git website) the repository.
+Than you have different possibilities:
+    1. Run "python smsl.py -h" for usage information.
+    2. Make the file smsl.py executable and run "smsl.py -h"
+       for usage information
+    3. Install the script with root privileges with
+       "python setup.py install"
+       This will install a script called send or send3 for python3.
+       Now you can run "send -h" resp. "send3 -h" for usage information.
+       If everything is working you can delete the downloaded folder.
+
+Known bugs and ToDos
+--------------------
+None at the moment.
+
+Thanks
+------
+Thanks to SMSLISTO for the HTML SMSlink service.
