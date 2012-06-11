@@ -98,6 +98,7 @@ class BColors:
         self.WARNING = ''
         self.FAIL = ''
         self.ENDC = ''
+bcolors = BColors()
 
 class AnswerSMSLinkParser(HTMLParser):
     """HTMLParser to read answer from server (currently just smslisto.com)"""
@@ -122,28 +123,23 @@ def send_sms(username, password, fromu, to, message, url, test=False):
                                'text': message})
     url = url + params
     if test:
-        print('Constructed url:\n%s' % url)
-        return url
+        return True, 'Constructed url:\n%s' % url
+    elif DEBUG:
+        answer = DEBUG_answer
     else:
-        if DEBUG:
-            answer = DEBUG_answer
-        else:
-            url_answer = urllib.urlopen(url)
-            answer = url_answer.read()
-            url_answer.close()
-        parser = AnswerSMSLinkHTMLParser()
-        parser.feed(answer)
-        parser.close()
-        if parser.result == '1':
-            print('Answer of server: %s%s %s %s' %
-                  (BColors.OKBLUE, parser.resultstring, parser.description,
-                   BColors.ENDC))
-            return False
-        else:
-            print('Answer of server: %s%s - %s%s' %
-                  (BColors.FAIL, parser.resultstring, parser.description,
-                   BColors.ENDC))
-            return True
+        url_answer = urllib.urlopen(url)
+        answer = url_answer.read()
+        url_answer.close()
+    parser = AnswerSMSLinkHTMLParser()
+    parser.feed(answer)
+    parser.close()
+    succes = parser.result == '1'
+    return succes, ('Answer of server: %s%s %s %s' %
+                    (bcolors.OKBLUE, parser.resultstring, parser.description,
+                     bcolors.ENDC) if succes else
+                    'Answer of server: %s%s - %s%s' %
+                    (bcolors.FAIL, parser.resultstring, parser.description,
+                     bcolors.ENDC))
 
 def get_config():
     """Read config from file if possible otherwise create example config file"""
@@ -158,7 +154,13 @@ def get_config():
 class _NoArgs:
     id = user = pw = fromu = None
     test = False
-    
+
+def is_phone_number(phone, accept_zero=False):
+    """Return if phone is a valid phone number."""
+    p = phone.translate(None, ' -()')
+    return (p.startswith('+') and p[1:].isdigit() or
+            p[0] == '0' and p.isdigit() and accept_zero)
+
 def get_send_args(config, to, message, args=None):
     """Get arguments from config or args and raise SmslError if necessary."""
     if not args:
@@ -170,9 +172,9 @@ def get_send_args(config, to, message, args=None):
         default_user = (args.id if args.id else
                         config.get('Settings', 'default_user') if
                         config.has_option('Settings', 'default_user') else None)
-        user = args.user if args.user else config.get(default_user, 'username')
-        pw = args.pw if args.pw else config.get(default_user, 'password')
-        fromu = args.fromu if args.fromu else config.get(default_user, 'from')
+        user = args.user or config.get(default_user, 'username')
+        pw = args.pw or config.get(default_user, 'password')
+        fromu = args.fromu or config.get(default_user, 'from')
     except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
         raise SmslError(
               "All of options 'user', 'pw' and 'fromu' have to exist as "
@@ -190,15 +192,11 @@ def get_send_args(config, to, message, args=None):
     # Get phone number    
     country = (config.get('Settings', 'country') if
                config.has_option('Settings', 'country') else None)
-    def is_phone_number(phone):
-        p = phone.translate(None, ' -()')
-        return (p.startswith('+') and p[1:].isdigit() or
-                p[0] == '0' and p.isdigit() and country)    
     # try to find receiver and number in Contacts
-    if not is_phone_number(to) and config.has_option('Contacts', to): 
+    if not is_phone_number(to, country) and config.has_option('Contacts', to):
         to = config.get('Contacts', to)
     # try to find receiver and number in CSV file
-    if (not is_phone_number(to) and
+    if (not is_phone_number(to, country) and
             config.has_option('ContactsCSV', 'file') and
             config.has_option('ContactsCSV', 'colreceiver') and
             config.has_option('ContactsCSV', 'colnumber')):
@@ -208,14 +206,14 @@ def get_send_args(config, to, message, args=None):
                         config.has_option('ContactsCSV', 'colreceiver2')
                         else None)
         colnumber = config.get('ContactsCSV', 'colnumber').strip()
-        try:            
+        try:
             with open(database, 'rb') as f:
                 reader = csv.DictReader(f, skipinitialspace=True)
                 for row in reader:
                     if (row[colreceiver].strip() == to or
                             colreceiver2 and row[colreceiver2].strip() == to):
                         to = row[colnumber]
-                        if not is_phone_number(to):
+                        if not is_phone_number(to, country):
                             raise SmslError('Wrong format of number in CSV col '
                                             '%s.' % colnumber)
                         break
@@ -223,15 +221,16 @@ def get_send_args(config, to, message, args=None):
             raise SmslError('CSV file does not exist at %s.' % database)
         except (csv.Error, KeyError):
             raise SmslError('Error while parsing the CSV file %s.' %
-                            database)    
-    if not is_phone_number(to):
+                            database)
+    if not is_phone_number(to, country):
         raise SmslError('Receiver is no valid phone number or contact not '
                         'found in config file or CSV file.')
     to = to.translate(None, ' -()')
+    msg = ''
     if to[0] == '0':
         to = to.replace('0', country, 1)
-        print('Replace 0 by country code %s.' % country)
-    return (user, pw, fromu, to, message, url), dict(test=test)
+        msg = 'Replace 0 by country code %s.' % country
+    return (user, pw, fromu, to, message, url), dict(test=test), msg
 
 
 def main():
@@ -267,10 +266,13 @@ def main():
     message = ' '.join(args.message)
     to = args.to
     try:
-        args, kwargs = get_send_args(config, to, message, args)
+        args, kwargs, msg = get_send_args(config, to, message, args)
+        if msg:
+            print(msg)
     except SmslError as ex:
         sys.exit(ex)
-    send_sms(*args, **kwargs)
+    res, msg = send_sms(*args, **kwargs)
+    print(msg)
 
 DEBUG = False
 DEBUG_answer = """
