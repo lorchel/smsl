@@ -8,7 +8,7 @@ Now sending a SMS is as far as typing:
 send dude "Hey Dude!"
 
 At the first start an example configuration file at the path
-/home/richter/.smsl.cfg was created. Feel free to adapt  the file to your needs.
+/home/richter/.smsl.cfg will be created. Feel free to adapt  the file to your needs.
 You can add new contacts, new users and a csv file which will additionally
 be searched for contacts. All contacts are shared between the users.
 You can add your SMSLISTO username, password and from information, so
@@ -38,14 +38,15 @@ Installation
 ------------
 Clone or download (ZIP button on git website) the repository.
 Than you have different possibilities:
-    1. Run "python smsl.py -h" for usage information.
-    2. Make the file smsl.py executable and run "smsl.py -h"
+    1. Just run "python smsl.py -h" for usage information.
+    2. or make the file smsl.py executable and run "smsl.py -h"
        for usage information
-    3. Install the script with root privileges with
-       "python setup.py install"
+    3. or install the script with "python setup.py install"
+       (needs root privileges).
        This will install a script called send or send3 for python3.
        Now you can run "send -h" resp. "send3 -h" for usage information.
-       If everything is working you can delete the downloaded folder.
+       If everything is working you can delete the downloaded folder in this
+       case.
 
 Known bugs and ToDos
 --------------------
