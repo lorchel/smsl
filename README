@@ -38,13 +38,12 @@ Installation
 ------------
 Clone or download (ZIP button on git website) the repository.
 Than you have different possibilities:
-    1. Just run "python smsl.py -h" for usage information.
+    1. Just run "python smsl.py -h"
     2. or make the file smsl.py executable and run "smsl.py -h"
-       for usage information
     3. or install the script with "python setup.py install"
        (needs root privileges).
        This will install a script called send or send3 for python3.
-       Now you can run "send -h" resp. "send3 -h" for usage information.
+       Now you can run "send -h" resp. "send3 -h".
        If everything is working you can delete the downloaded folder in this
        case.
 
