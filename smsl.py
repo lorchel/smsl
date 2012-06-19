@@ -210,8 +210,9 @@ def get_send_args(config, to, message, args=None):
             with open(database, 'rb') as f:
                 reader = csv.DictReader(f, skipinitialspace=True)
                 for row in reader:
-                    if (row[colreceiver].strip() == to or
-                            colreceiver2 and row[colreceiver2].strip() == to):
+                    if (row[colreceiver].strip().lower() == to.lower() or
+                            colreceiver2 and colreceiver2.lower() and
+                            row[colreceiver2].strip().lower() == to):
                         to = row[colnumber]
                         if not is_phone_number(to, country):
                             raise SmslError('Wrong format of number in CSV col '
