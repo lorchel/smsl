@@ -214,7 +214,6 @@ def get_send_args(config, to, message, args=None):
                             colreceiver2 and colreceiver2.lower() and
                             row[colreceiver2].strip().lower() == to):
                         to = row[colnumber]
-                        print to, country
                         if not is_phone_number(to, country):
                             raise SmslError('Wrong format of number in CSV col '
                                             '%s.' % colnumber)
