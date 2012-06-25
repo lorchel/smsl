@@ -100,7 +100,7 @@ class BColors:
         self.ENDC = ''
 bcolors = BColors()
 
-class AnswerSMSLinkParser(HTMLParser):
+class AnswerSMSLinkHTMLParser(HTMLParser):
     """HTMLParser to read answer from server (currently just smslisto.com)"""
     tags = ('result', 'resultstring', 'description', 'partcount', 'endcause')
     def __init__(self):
@@ -214,6 +214,7 @@ def get_send_args(config, to, message, args=None):
                             colreceiver2 and colreceiver2.lower() and
                             row[colreceiver2].strip().lower() == to):
                         to = row[colnumber]
+                        print to, country
                         if not is_phone_number(to, country):
                             raise SmslError('Wrong format of number in CSV col '
                                             '%s.' % colnumber)
@@ -263,8 +264,15 @@ def main():
     parser.add_argument('-t', '--test', action='store_true',
                         help='Just print url, do not send message. '
                         'You can copy+paste the url into your webbrowser.')
+    parser.add_argument('-c', '--count', action='store_true',
+                        help='Count characters in message, do not send.')
     args = parser.parse_args()
     message = ' '.join(args.message)
+    if args.count:
+        N = len(message)
+        print('The message has %d characters. These are %d sms with 160 (145) '
+              'characters' % (N, 1 if N <= 160 else (N - 160 - 1) // 145 + 2))
+        sys.exit()
     to = args.to
     try:
         args, kwargs, msg = get_send_args(config, to, message, args)
