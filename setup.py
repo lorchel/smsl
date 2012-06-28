@@ -38,10 +38,7 @@ AUTHOR_EMAIL = 'lorchel@gmx.de'
 LICENSE = 'GNU General Public License, Version 3 (GPLv3)'
 KEYWORDS = ['send', 'sms', 'mail', 'smslisto.com']
 INSTALL_REQUIRES = ['setuptools']
-if sys.version_info.major == 3:
-    ENTRY_POINTS = {'console_scripts': ['send3 = smsl:main']}
-else:
-    ENTRY_POINTS = {'console_scripts': ['send = smsl:main']}
+ENTRY_POINTS = {'console_scripts': ['send = smsl:main']}
 
 
 def convert2to3():

@@ -43,7 +43,3 @@ You have 2 possibilities:
        - install the script with "python setup.py install" (with root privileges)
        - and run "send -h" for usage information.
        - If everything is working you can delete the downloaded files.
-
-Thanks
-------
-Thanks to SMSLISTO for the HTML SMSlink service.
