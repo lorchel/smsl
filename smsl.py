@@ -161,6 +161,47 @@ def is_phone_number(phone, accept_zero=False):
     return (p.startswith('+') and p[1:].isdigit() or
             p[0] == '0' and p.isdigit() and accept_zero)
 
+def read_csv(config, to=None, country=None):
+    if (config.has_option('ContactsCSV', 'file') and
+            config.has_option('ContactsCSV', 'colreceiver') and
+            config.has_option('ContactsCSV', 'colnumber')):
+        database = os.path.expanduser(config.get('ContactsCSV', 'file'))
+        colreceiver = config.get('ContactsCSV', 'colreceiver').strip()
+        colreceiver2 = (config.get('ContactsCSV', 'colreceiver2').strip() if
+                        config.has_option('ContactsCSV', 'colreceiver2')
+                        else None)
+        colnumber = config.get('ContactsCSV', 'colnumber').strip()
+        try:
+            with open(database, 'rb') as f:
+                reader = csv.DictReader(f, skipinitialspace=True)
+                if to:
+                    for row in reader:
+                        if (row[colreceiver].strip().lower() == to.lower() or
+                                colreceiver2 and colreceiver2.lower() and
+                                row[colreceiver2].strip().lower() == to):
+                            to = row[colnumber]
+                            if not is_phone_number(to, country):
+                                raise SmslError('Wrong format of number in CSV col '
+                                                '%s.' % colnumber)
+                            break
+                else:
+                    to = [(row[colreceiver], row[colnumber])
+                          for row in reader if row[colreceiver]]
+                    if colreceiver2:
+                        to.extend([(row[colreceiver2], row[colnumber])
+                                   for row in reader if row[colreceiver2]])    
+        except IOError:
+            raise SmslError('CSV file does not exist at %s.' % database)
+        except (csv.Error, KeyError):
+            raise SmslError('Error while parsing the CSV file %s.' %
+                            database)
+    return to
+
+def get_all_contacts(config):
+    return sorted((list(config.items('Contacts'))
+                   if config.has_section('Contacts') else []) +
+                  read_csv(config) or [])
+
 def get_send_args(config, to, message, args=None):
     """Get arguments from config or args and raise SmslError if necessary."""
     if not args:
@@ -192,37 +233,11 @@ def get_send_args(config, to, message, args=None):
     # Get phone number    
     country = (config.get('Settings', 'country') if
                config.has_option('Settings', 'country') else None)
-    # try to find receiver and number in Contacts
+    # Try to find receiver and number in Contacts and csv file
     if not is_phone_number(to, country) and config.has_option('Contacts', to):
         to = config.get('Contacts', to)
-    # try to find receiver and number in CSV file
-    if (not is_phone_number(to, country) and
-            config.has_option('ContactsCSV', 'file') and
-            config.has_option('ContactsCSV', 'colreceiver') and
-            config.has_option('ContactsCSV', 'colnumber')):
-        database = os.path.expanduser(config.get('ContactsCSV', 'file'))
-        colreceiver = config.get('ContactsCSV', 'colreceiver').strip()
-        colreceiver2 = (config.get('ContactsCSV', 'colreceiver2').strip() if
-                        config.has_option('ContactsCSV', 'colreceiver2')
-                        else None)
-        colnumber = config.get('ContactsCSV', 'colnumber').strip()
-        try:
-            with open(database, 'rb') as f:
-                reader = csv.DictReader(f, skipinitialspace=True)
-                for row in reader:
-                    if (row[colreceiver].strip().lower() == to.lower() or
-                            colreceiver2 and colreceiver2.lower() and
-                            row[colreceiver2].strip().lower() == to):
-                        to = row[colnumber]
-                        if not is_phone_number(to, country):
-                            raise SmslError('Wrong format of number in CSV col '
-                                            '%s.' % colnumber)
-                        break
-        except IOError:
-            raise SmslError('CSV file does not exist at %s.' % database)
-        except (csv.Error, KeyError):
-            raise SmslError('Error while parsing the CSV file %s.' %
-                            database)
+    if not is_phone_number(to, country):
+        to = read_csv(config, to, country)
     if not is_phone_number(to, country):
         raise SmslError('Receiver is no valid phone number or contact not '
                         'found in config file or CSV file.')
@@ -244,9 +259,9 @@ def main():
                         description=description, epilog=EPILOG,
                         formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument('to',
+    parser.add_argument('to', nargs='?',
                         help='Number or contact you wish to send the sms to.')
-    parser.add_argument('message', nargs='+',
+    parser.add_argument('message', nargs='*',
                         help='The message you want to send. Use quotes! '
                         'Otherwise there will be errors when using *? and '
                         'other special characters.')
@@ -265,12 +280,24 @@ def main():
                         'You can copy+paste the url into your webbrowser.')
     parser.add_argument('-c', '--count', action='store_true',
                         help='Count characters in message, do not send.')
+    parser.add_argument('-s', '--show', action='store_true',
+                        help='Show all available contacts.')                        
     args = parser.parse_args()
     message = ' '.join(args.message)
     if args.count:
         N = len(message)
         print('The message has %d characters. These are %d sms with 160 (145) '
               'characters' % (N, 1 if N <= 160 else (N - 160 - 1) // 145 + 2))
+        sys.exit()
+    if args.show:
+        contacts = get_all_contacts(config)
+        if contacts:
+            print('%30s %s' % ('contact', 'number'))
+            print('%30s %s' % ('-'*10, '-'*10))
+            for (name, number) in contacts:
+                print('%30s %s' % (name, number))
+        else:
+            print('No contacts found.')
         sys.exit()
     to = args.to
     try:
