@@ -24,12 +24,13 @@ from HTMLParser import HTMLParser
 import ConfigParser
 import argparse
 import csv
-import os.path
+import os
 import sys
 import urllib
 
 
-CONFIG_FILENAME = os.path.expanduser(os.path.join('~', '.smsl.cfg'))
+CONFIG_FILENAME = os.path.expanduser(os.path.join('~', '.config', 'smsl.cfg'))
+CONFIG_FILENAME_ALT = os.path.expanduser(os.path.join('~', '.smsl.cfg'))
 EPILOG = """
 At the first start an example configuration file at the path
 %s was created. Feel free to adapt  the file to your needs.
@@ -55,8 +56,11 @@ Give your thumb a break! ;)
 """ % CONFIG_FILENAME
 
 CONFIG_EXAMPLE = """
+# Commented lines start with a '#'.
+# Please edit the file according to your preferences.
+
 [Settings]
-default_user = example_user
+#default_user = example_user
 url = https://www.smslisto.com/myaccount/sendsms.php?
 country = +1
 
@@ -64,12 +68,11 @@ country = +1
 dude = +1234567890
 
 [ContactsCSV]
-# Uncomment the following rows and add the direct path of your csv file
-# if you want to search there for mobile numbers.
-# Column names have to be in the first row in this file.
+# Add the full path to your csv file if you want to search there for mobile
+# numbers. Column names have to be in the first row in this file.
 #file = 
-#colreceiver = name of receiver
-#colnumber = number of receiver
+#colreceiver = column header for 'name of receiver' column 
+#colnumber = column header for 'number of receiver' column
 
 [example_user]
 username = Your SMSLISTO username
@@ -144,9 +147,10 @@ def send_sms(username, password, fromu, to, message, url, test=False):
 def get_config():
     """Read config from file if possible otherwise create example config file"""
     config = ConfigParser.SafeConfigParser()
-    if os.path.exists(CONFIG_FILENAME):
-        config.read(CONFIG_FILENAME)
-    else:
+    if not config.read([CONFIG_FILENAME, CONFIG_FILENAME_ALT]):
+        dirname = os.path.dirname(CONFIG_FILENAME)
+        if not os.path.exists(dirname):
+            os.mkdir(dirname)
         with open(CONFIG_FILENAME, 'wb') as f:
             f.write(CONFIG_EXAMPLE.strip('\n'))
     return config
@@ -189,7 +193,7 @@ def read_csv(config, to=None, country=None):
                           for row in reader if row[colreceiver]]
                     if colreceiver2:
                         to.extend([(row[colreceiver2], row[colnumber])
-                                   for row in reader if row[colreceiver2]])    
+                                   for row in reader if row[colreceiver2]])
         except IOError:
             raise SmslError('CSV file does not exist at %s.' % database)
         except (csv.Error, KeyError):
@@ -281,24 +285,24 @@ def main():
     parser.add_argument('-c', '--count', action='store_true',
                         help='Count characters in message, do not send.')
     parser.add_argument('-s', '--show', action='store_true',
-                        help='Show all available contacts.')                        
+                        help='Show all available contacts.')
     args = parser.parse_args()
     message = ' '.join(args.message)
     if args.count:
         N = len(message)
         print('The message has %d characters. These are %d sms with 160 (145) '
               'characters' % (N, 1 if N <= 160 else (N - 160 - 1) // 145 + 2))
-        sys.exit()
+        return
     if args.show:
         contacts = get_all_contacts(config)
         if contacts:
             print('%30s %s' % ('contact', 'number'))
-            print('%30s %s' % ('-'*10, '-'*10))
+            print('%30s %s' % ('-' * 10, '-' * 10))
             for (name, number) in contacts:
                 print('%30s %s' % (name, number))
         else:
             print('No contacts found.')
-        sys.exit()
+        return
     to = args.to
     try:
         args, kwargs, msg = get_send_args(config, to, message, args)
