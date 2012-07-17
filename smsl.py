@@ -24,6 +24,7 @@ from HTMLParser import HTMLParser
 import ConfigParser
 import argparse
 import csv
+import getpass
 import os
 import sys
 import urllib
@@ -63,6 +64,7 @@ CONFIG_EXAMPLE = """
 #default_user = example_user
 url = https://www.smslisto.com/myaccount/sendsms.php?
 country = +1
+#history = ~/.config/smsl_hist.txt # uncomment for history of sent sms
 
 [Contacts]
 dude = +1234567890
@@ -76,7 +78,7 @@ dude = +1234567890
 
 [example_user]
 username = Your SMSLISTO username
-password = Your SMSLISTO password
+#password = Your SMSLISTO password
 from = Your username or your verified phone number
 #url = it is possible to set a different url for every user
 """
@@ -101,6 +103,8 @@ class BColors:
         self.WARNING = ''
         self.FAIL = ''
         self.ENDC = ''
+    #def all(self):
+    #    return (self.HEADER, self.OKBLUE 
 bcolors = BColors()
 
 class AnswerSMSLinkHTMLParser(HTMLParser):
@@ -155,10 +159,6 @@ def get_config():
             f.write(CONFIG_EXAMPLE.strip('\n'))
     return config
 
-class _NoArgs:
-    id = user = pw = fromu = None
-    test = False
-
 def is_phone_number(phone, accept_zero=False):
     """Return if phone is a valid phone number."""
     p = phone.translate(None, ' -()')
@@ -206,34 +206,29 @@ def get_all_contacts(config):
                    if config.has_section('Contacts') else []) +
                   read_csv(config) or [])
 
-def get_send_args(config, to, message, args=None):
+def get_send_args(config, to, message, test=False, default_user=None):
     """Get arguments from config or args and raise SmslError if necessary."""
-    if not args:
-        args = _NoArgs()
-    test = args.test
     if not message:
         raise SmslError('Your message is empty.')
+    if not default_user and not config.has_option('Settings', 'default_user'):
+        raise SmslError("The user has to be given as argument with -i "
+                        "or has to be defined "
+                        "in the config file as option default_user in section "
+                        "Settings.")
+    default_user = default_user or config.get('Settings', 'default_user')
     try:
-        default_user = (args.id if args.id else
-                        config.get('Settings', 'default_user') if
-                        config.has_option('Settings', 'default_user') else None)
-        user = args.user or config.get(default_user, 'username')
-        pw = args.pw or config.get(default_user, 'password')
-        fromu = args.fromu or config.get(default_user, 'from')
+        user = config.get(default_user, 'username')
+        fromu = config.get(default_user, 'from')
     except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
         raise SmslError(
-              "All of options 'user', 'pw' and 'fromu' have to exist as "
-              "option in the section of default user or have to be defined "
-              "as command line option. " +
-              ("(current default user: %s)" % default_user if default_user else
-               "(no default user)"))
+              "Options 'user' and 'fromu' have to exist "
+              "in the config file under user section '%s'." % default_user)
     try:
         url = (config.get(default_user, 'url', raw=True) if
                config.has_option(default_user, 'url') else
                config.get('Settings', 'url', raw=True))
     except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
         raise SmslError('Error when reading url from config file.')
-
     # Get phone number    
     country = (config.get('Settings', 'country') if
                config.has_option('Settings', 'country') else None)
@@ -250,6 +245,9 @@ def get_send_args(config, to, message, args=None):
     if to[0] == '0':
         to = to.replace('0', country, 1)
         msg = 'Replace 0 by country code %s.' % country
+    pw = (config.get(default_user, 'password') if
+          config.has_option(default_user, 'password') else
+          getpass.getpass('Please enter your SMSLISTO password: '))
     return (user, pw, fromu, to, message, url), dict(test=test), msg
 
 
@@ -273,12 +271,6 @@ def main():
                         help='Your alias in the config file '
                         '(default: %s)' % default_user if default_user else
                         '(no default)')
-    parser.add_argument('-u', '--user',
-        help='Your SMSLISTO username')
-    parser.add_argument('-p', '--pw',
-        help='Your SMSLISTO password')
-    parser.add_argument('-f', '--fromu',
-        help='Your username or your verified phone number')
     parser.add_argument('-t', '--test', action='store_true',
                         help='Just print url, do not send message. '
                         'You can copy+paste the url into your webbrowser.')
@@ -305,13 +297,18 @@ def main():
         return
     to = args.to
     try:
-        args, kwargs, msg = get_send_args(config, to, message, args)
+        send_args, send_kwargs, msg = get_send_args(config, args.to, message,
+                                                    args.test, args.id)
         if msg:
             print(msg)
     except SmslError as ex:
         sys.exit(ex)
-    res, msg = send_sms(*args, **kwargs)
-    print(msg)
+    result, answer = send_sms(*send_args, **send_kwargs)
+    if not DEBUG and not args.test and config.has_option('Settings', 'history'):
+        fname = os.path.expanduser(config.get('Settings', 'history'))
+        with open(fname, 'a') as f: 
+            f.write("user: %s receiver: %s msg: '%s' response: %s\n" %
+                    (args.id, args.to, message, answer))
 
 DEBUG = False
 DEBUG_answer = """
