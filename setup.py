@@ -19,9 +19,6 @@ Now sending a SMS is as far as typing:
 send dude "Hey Dude!"
 """
 
-import distribute_setup
-# automatically install distribute if the user does not have it installed
-distribute_setup.use_setuptools()
 from setuptools import setup
 import os
 import shutil

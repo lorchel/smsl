@@ -103,8 +103,12 @@ class BColors:
         self.WARNING = ''
         self.FAIL = ''
         self.ENDC = ''
-    #def all(self):
-    #    return (self.HEADER, self.OKBLUE 
+    def replace(self, text):
+        for color in [self.HEADER, self.OKBLUE, self.OKGREEN,
+                      self.WARNING, self.FAIL, self.ENDC]:
+            text = text.replace(color, '')
+        return text
+        
 bcolors = BColors()
 
 class AnswerSMSLinkHTMLParser(HTMLParser):
@@ -304,11 +308,12 @@ def main():
     except SmslError as ex:
         sys.exit(ex)
     result, answer = send_sms(*send_args, **send_kwargs)
+    print(answer)
     if not DEBUG and not args.test and config.has_option('Settings', 'history'):
         fname = os.path.expanduser(config.get('Settings', 'history'))
         with open(fname, 'a') as f: 
             f.write("user: %s receiver: %s msg: '%s' response: %s\n" %
-                    (args.id, args.to, message, answer))
+                    (args.id, args.to, message, bcolors.replace(answer)))
 
 DEBUG = False
 DEBUG_answer = """
