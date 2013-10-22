@@ -63,7 +63,7 @@ CONFIG_EXAMPLE = """
 # Please edit the file according to your preferences.
 
 [Settings]
-#default_user = example_user
+default_user = example_user
 provider = smslisto
 country = +1
 #history = ~/.config/smsl_hist.txt # uncomment for history of sent sms
