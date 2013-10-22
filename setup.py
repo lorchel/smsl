@@ -9,14 +9,13 @@
 # Copyright (C) 2012-2013 Tom Richter
 #---------------------------------------------------------------------
 """
-Tool for sending SMS via HTML SMSlink
-=====================================
+# SMSL
+### Tool for sending SMS via HTML SMSlink
 
 This is a command line utility for sending short messages with the help of
-HTML SMSlink. Currently this is possible with the website smslisto.com.
-Now sending a SMS is as far as typing:
+HTML SMSlink and different providers. Now sending a SMS is as far as typing:
 
-send dude "Hey Dude!"
+    send dude "Hey Dude!"
 """
 
 from setuptools import setup
