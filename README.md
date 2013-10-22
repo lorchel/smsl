@@ -17,8 +17,8 @@ You can add your providers username, password and from information, so
 that you don't need to enter it every time you want to send a short message.
 
 If you don't want your password to be saved on your harddisk in plain letters
-you can comment out this option and indicate it with the command line option
-`-p`. Anyway the created link will include your password in plain letters
+you can comment out this option and enter it each time you send a SMS.
+Anyway the created link will include your password in plain letters
 and it will be send over your internet connection. This means don't use an
 expensive password on your providers account when using this tool.
 
