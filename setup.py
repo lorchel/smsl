@@ -25,7 +25,7 @@ import sys
 
 
 LOCAL_PATH = os.path.abspath(os.path.dirname(__file__))
-DOCSTRING = __doc__.split('\n')
+DOCSTRING = [line.strip('#').strip() for line in __doc__.split('\n')]
 # package specific settings
 VERSION = '0.1'
 NAME = 'smsl'
@@ -67,9 +67,9 @@ def setupPackage():
     setup(
         name=NAME,
         version=VERSION,
-        description=DOCSTRING[1],
+        description=DOCSTRING[2],
         long_description=' '.join(DOCSTRING[4:-1]),
-        url='',
+        url='https://github.com/lorchel/smsl',
         author=AUTHOR,
         author_email=AUTHOR_EMAIL,
         license=LICENSE,
