@@ -62,7 +62,7 @@ CONFIG_EXAMPLE = """
 
 [Settings]
 #default_user = example_user
-url = https://www.smslisto.com/myaccount/sendsms.php?
+provider = smslisto
 country = +1
 #history = ~/.config/smsl_hist.txt # uncomment for history of sent sms
 
@@ -77,11 +77,18 @@ dude = +1234567890
 #colnumber = column header for 'number of receiver' column
 
 [example_user]
-username = Your SMSLISTO username
-#password = Your SMSLISTO password
+username = Your provider username
+#password = Your provider password
 from = Your username or your verified phone number
-#url = it is possible to set a different url for every user
 """
+
+def create_url_smslisto(username, password, from_, to, message):
+    url = 'https://www.smslisto.com/myaccount/sendsms.php?'
+    params = urllib.urlencode({'username': username, 'password': password,
+                               'from': from_, 'to': to, 'text': message})
+    return url + params
+
+PROVIDERS = {'smslisto': create_url_smslisto}
 
 class SmslError(Exception):
     pass
@@ -127,12 +134,10 @@ class AnswerSMSLinkHTMLParser(HTMLParser):
     def handle_endtag(self, tag):
         self._tag = ''
 
-def send_sms(username, password, fromu, to, message, url, test=False):
+def send_sms(send_args, provider, test=False):
     """Send SMS with a HTML SMSlink."""
-    params = urllib.urlencode({'username': username, 'password': password,
-                               'from': fromu, 'to': to,
-                               'text': message})
-    url = url + params
+    get_url = PROVIDERS[provider]
+    url = get_url(*send_args)
     if test:
         return True, 'Constructed url:\n%s' % url
     elif DEBUG:
@@ -220,22 +225,20 @@ def get_send_args(config, to, message, test=False, default_user=None):
                         "in the config file as option default_user in section "
                         "Settings.")
     default_user = default_user or config.get('Settings', 'default_user')
-    try:
-        user = config.get(default_user, 'username')
-        fromu = config.get(default_user, 'from')
-    except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
-        raise SmslError(
-              "Options 'user' and 'fromu' have to exist "
-              "in the config file under user section '%s'." % default_user)
-    try:
-        url = (config.get(default_user, 'url', raw=True) if
-               config.has_option(default_user, 'url') else
-               config.get('Settings', 'url', raw=True))
-    except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
-        raise SmslError('Error when reading url from config file.')
+    def get_option(option, raw=False):
+        try:
+            return (config.get(default_user, option, raw=raw) if
+                    config.has_option(default_user, option) else
+                    config.get('Settings', option, raw=raw))
+        except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+            raise SmslError('Error when reading %s from config file.' % option)
+    user = get_option('username')
+    from_ = get_option('from')
+    provider = get_option('provider')
+    if provider not in PROVIDERS:
+        raise SmslError('Unknown provider: %s' % provider)
     # Get phone number
-    country = (config.get('Settings', 'country') if
-               config.has_option('Settings', 'country') else None)
+    country = get_option('country')
     # Try to find receiver and number in Contacts and csv file
     if not is_phone_number(to, country) and config.has_option('Contacts', to):
         to = config.get('Contacts', to)
@@ -252,7 +255,7 @@ def get_send_args(config, to, message, test=False, default_user=None):
     pw = (config.get(default_user, 'password') if
           config.has_option(default_user, 'password') else
           getpass.getpass('Please enter your SMSLISTO password: '))
-    return (user, pw, fromu, to, message, url), dict(test=test), msg
+    return (user, pw, from_, to, message), provider, dict(test=test), msg
 
 
 def main():
@@ -301,13 +304,14 @@ def main():
         return
     to = args.to
     try:
-        send_args, send_kwargs, msg = get_send_args(config, args.to, message,
+        send_args, provider, send_kwargs, msg = get_send_args(
+                                                    config, args.to, message,
                                                     args.test, args.id)
         if msg:
             print(msg)
     except SmslError as ex:
         sys.exit(ex)
-    result, answer = send_sms(*send_args, **send_kwargs)
+    result, answer = send_sms(send_args, provider, **send_kwargs)
     print(answer)
     if not DEBUG and not args.test and config.has_option('Settings', 'history'):
         fname = os.path.expanduser(config.get('Settings', 'history'))
