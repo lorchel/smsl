@@ -37,7 +37,7 @@ Give your thumb a break! ;)
 * python 2.7 or python >3.2
 
 ### Installation
-* run `pip instal smsl` or
+* run `pip install smsl` or
 * download source and run `python setup.py install`
 
 ### Usage
