@@ -9,13 +9,15 @@
 # Copyright (C) 2012-2013 Tom Richter
 #---------------------------------------------------------------------
 """
-# SMSL
-### Tool for sending SMS via HTML SMSlink
+SMSL
+====
+Tool for sending SMS via HTML SMSlink
+-------------------------------------
 
 This is a command line utility for sending short messages with the help of
 HTML SMSlink and different providers. Now sending a SMS is as far as typing:
 
-    send dude "Hey Dude!"
+``send dude "Hey Dude!"``
 """
 
 from setuptools import setup
@@ -25,16 +27,7 @@ import sys
 
 
 LOCAL_PATH = os.path.abspath(os.path.dirname(__file__))
-DOCSTRING = [line.strip('#').strip() for line in __doc__.split('\n')]
-# package specific settings
-VERSION = '0.1'
-NAME = 'smsl'
-AUTHOR = 'Tom Richter'
-AUTHOR_EMAIL = 'lorchel@gmx.de'
-LICENSE = 'MIT license'
-KEYWORDS = ['send', 'sms', 'mail']
-INSTALL_REQUIRES = ['setuptools']
-ENTRY_POINTS = {'console_scripts': ['send = smsl:main']}
+VERSION = '0.2'
 
 
 def convert2to3():
@@ -59,35 +52,25 @@ def convert2to3():
     main('lib2to3.fixes', ['-w', '-n', '--no-diffs', 'smsl.py'])
 
 
-def setupPackage():
-    # use lib2to3 for Python 3.x
-    if sys.version_info.major == 3:
-        convert2to3()
-    # setup package
-    setup(
-        name=NAME,
-        version=VERSION,
-        description=DOCSTRING[2],
-        long_description=' '.join(DOCSTRING[4:-1]),
-        url='https://github.com/lorchel/smsl',
-        author=AUTHOR,
-        author_email=AUTHOR_EMAIL,
-        license=LICENSE,
-        platforms='OS Independent',
-        classifiers=[
-            'Environment :: Console',
-            'Operating System :: OS Independent',
-            'Programming Language :: Python'],
-        keywords=KEYWORDS,
-        install_requires=INSTALL_REQUIRES,
-        entry_points=ENTRY_POINTS,
-        #use2to3=True,
-        py_modules=['smsl'],
-    )
-    # cleanup after using lib2to3 for Python 3.x
-    if sys.version_info.major == 3:
-        os.chdir(LOCAL_PATH)
-
-
-if __name__ == '__main__':
-    setupPackage()
+# use lib2to3 for Python 3.x
+if sys.version_info.major == 3:
+    convert2to3()
+# setup package
+setup(name='smsl',
+      version=VERSION,
+      description='Tool for sending SMS via HTML SMSlink',
+      long_description=__doc__,
+      url='https://github.com/lorchel/smsl',
+      author='Tom Richter',
+      author_email='lorchel@gmx.de',
+      license='MIT license',
+      platforms='OS Independent',
+      keywords=['send', 'sms', 'mail'],
+      install_requires=['setuptools'],
+      entry_points={'console_scripts': ['send = smsl:main']},
+      #use2to3=True,
+      py_modules=['smsl']
+      )
+# cleanup after using lib2to3 for Python 3.x
+if sys.version_info.major == 3:
+    os.chdir(LOCAL_PATH)
