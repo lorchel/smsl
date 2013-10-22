@@ -28,7 +28,7 @@ import sys
 LOCAL_PATH = os.path.abspath(os.path.dirname(__file__))
 DOCSTRING = __doc__.split('\n')
 # package specific settings
-VERSION = '0.0.3'
+VERSION = '0.0.5'
 NAME = 'smsl'
 AUTHOR = 'Tom Richter'
 AUTHOR_EMAIL = 'lorchel@gmx.de'
