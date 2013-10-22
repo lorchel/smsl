@@ -13,10 +13,12 @@ Tool for sending SMS via HTML SMSlink
 =====================================
 
 This is a command line utility for sending short messages with the help of
-HTML SMSlink. Currently this is possible with the website smslisto.com.
-Now sending a SMS is as far as typing:
+HTML SMSlink and different providers. Now sending a SMS is as far as typing:
 
 send dude "Hey Dude!"
+
+Supported providers are: smslisto.com
+Please contact the developer to add support for other providers.
 """
 
 
@@ -37,21 +39,21 @@ At the first start an example configuration file at the path
 %s was created. Feel free to adapt  the file to your needs.
 You can add new contacts, new users and a csv file which will additionally
 be searched for contacts. All contacts are shared between the users.
-You can add your SMSLISTO username, password and from information, so
+You can add your providers username, password and from information, so
 that you don't need to enter it every time you want to send a short message.
 
 If you don't want your password to be saved on your harddisk in plain letters
 you can comment out this option and indicate it with the command line option
 '-p'. Anyway the created link will include your password in plain letters
 and it will be send over your internet connection. This means don't use an
-expensive password on your SMSLISTO account when using this tool.
+expensive password on your providers account when using this tool.
 
-By the way you need to be registered at SMSLISTO and you need to have some money
-on your account. The tool uses the HTML SMSlink service.
+By the way you need to be registered at your providers website and you need to
+have some money on your account. The tool uses the HTML SMSlink service.
 The script creates a link like
 https://www.smslisto.com/myaccount/sendsms.php?username=xxxxxxxxxx&
 password=xxxxxxxxxx&from=xxxxxxxxxx&to=xxxxxxxxxx&text=xxxxxxxxxx
-and sends it to smslisto.com.
+and sends it to the provider.
 
 Give your thumb a break! ;)
 """ % CONFIG_FILENAME
@@ -82,6 +84,7 @@ username = Your provider username
 from = Your username or your verified phone number
 """
 
+
 def create_url_smslisto(username, password, from_, to, message):
     url = 'https://www.smslisto.com/myaccount/sendsms.php?'
     params = urllib.urlencode({'username': username, 'password': password,
@@ -90,8 +93,10 @@ def create_url_smslisto(username, password, from_, to, message):
 
 PROVIDERS = {'smslisto': create_url_smslisto}
 
+
 class SmslError(Exception):
     pass
+
 
 #http://stackoverflow.com/questions/287871/print-in-terminal-with-colors-
 #using-python
@@ -103,6 +108,7 @@ class BColors:
     WARNING = '\033[93m'
     FAIL = '\033[91m'
     ENDC = '\033[0m'
+
     def disable(self):
         self.HEADER = ''
         self.OKBLUE = ''
@@ -110,6 +116,7 @@ class BColors:
         self.WARNING = ''
         self.FAIL = ''
         self.ENDC = ''
+
     def replace(self, text):
         for color in [self.HEADER, self.OKBLUE, self.OKGREEN,
                       self.WARNING, self.FAIL, self.ENDC]:
@@ -118,21 +125,27 @@ class BColors:
 
 bcolors = BColors()
 
+
 class AnswerSMSLinkHTMLParser(HTMLParser):
     """HTMLParser to read answer from server (currently just smslisto.com)"""
     tags = ('result', 'resultstring', 'description', 'partcount', 'endcause')
+
     def __init__(self):
         HTMLParser.__init__(self)
         self._tag = ''
+
     def handle_starttag(self, tag, attrs):
         self._tag = tag
         if tag in self.tags:
             setattr(self, tag, '')
+
     def handle_data(self, data):
         if self._tag in self.tags:
             setattr(self, self._tag, data)
+
     def handle_endtag(self, tag):
         self._tag = ''
+
 
 def send_sms(send_args, provider, test=False):
     """Send SMS with a HTML SMSlink."""
@@ -157,8 +170,9 @@ def send_sms(send_args, provider, test=False):
                     (bcolors.FAIL, parser.resultstring, parser.description,
                      bcolors.ENDC))
 
+
 def get_config():
-    """Read config from file if possible otherwise create example config file"""
+    """Read config from file or create example config file"""
     config = ConfigParser.SafeConfigParser()
     if not config.read([CONFIG_FILENAME, CONFIG_FILENAME_ALT]):
         dirname = os.path.dirname(CONFIG_FILENAME)
@@ -168,11 +182,13 @@ def get_config():
             f.write(CONFIG_EXAMPLE.strip('\n'))
     return config
 
+
 def is_phone_number(phone, accept_zero=False):
     """Return if phone is a valid phone number."""
     p = phone.translate(None, ' -()')
     return (p.startswith('+') and p[1:].isdigit() or
             p[0] == '0' and p.isdigit() and accept_zero)
+
 
 def read_csv(config, to=None, country=None):
     if (config.has_option('ContactsCSV', 'file') and
@@ -194,8 +210,8 @@ def read_csv(config, to=None, country=None):
                                 row[colreceiver2].strip().lower() == to):
                             to = row[colnumber]
                             if not is_phone_number(to, country):
-                                raise SmslError('Wrong format of number in CSV col '
-                                                '%s.' % colnumber)
+                                raise SmslError('Wrong format of number in CSV'
+                                                ' col %s.' % colnumber)
                             break
                 else:
                     to = [(row[colreceiver], row[colnumber])
@@ -210,10 +226,12 @@ def read_csv(config, to=None, country=None):
                             database)
     return to
 
+
 def get_all_contacts(config):
     return sorted((list(config.items('Contacts'))
                    if config.has_section('Contacts') else []) +
                   read_csv(config) or [])
+
 
 def get_send_args(config, to, message, test=False, default_user=None):
     """Get arguments from config or args and raise SmslError if necessary."""
@@ -225,6 +243,7 @@ def get_send_args(config, to, message, test=False, default_user=None):
                         "in the config file as option default_user in section "
                         "Settings.")
     default_user = default_user or config.get('Settings', 'default_user')
+
     def get_option(option, raw=False):
         try:
             return (config.get(default_user, option, raw=raw) if
@@ -262,11 +281,11 @@ def main():
     """Get command line arguments and send sms"""
     config = get_config()
     default_user = (config.get('Settings', 'default_user') if
-                config.has_option('Settings', 'default_user') else None)
+                    config.has_option('Settings', 'default_user') else None)
     description = __doc__
     parser = argparse.ArgumentParser(
-                        description=description, epilog=EPILOG,
-                        formatter_class=argparse.RawDescriptionHelpFormatter)
+        description=description, epilog=EPILOG,
+        formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument('to', nargs='?',
                         help='Number or contact you wish to send the sms to.')
@@ -302,18 +321,17 @@ def main():
         else:
             print('No contacts found.')
         return
-    to = args.to
     try:
         send_args, provider, send_kwargs, msg = get_send_args(
-                                                    config, args.to, message,
-                                                    args.test, args.id)
+            config, args.to, message, args.test, args.id)
         if msg:
             print(msg)
     except SmslError as ex:
         sys.exit(ex)
     result, answer = send_sms(send_args, provider, **send_kwargs)
     print(answer)
-    if not DEBUG and not args.test and config.has_option('Settings', 'history'):
+    if (not DEBUG and not args.test and
+            config.has_option('Settings', 'history')):
         fname = os.path.expanduser(config.get('Settings', 'history'))
         with open(fname, 'a') as f:
             f.write("user: %s receiver: %s msg: '%s' response: %s\n" %

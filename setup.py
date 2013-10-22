@@ -59,6 +59,7 @@ def convert2to3():
     print('Converting to Python3 via lib2to3...')
     main('lib2to3.fixes', ['-w', '-n', '--no-diffs', 'smsl.py'])
 
+
 def setupPackage():
     # use lib2to3 for Python 3.x
     if sys.version_info.major == 3:
