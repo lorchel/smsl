@@ -77,8 +77,7 @@ def setupPackage():
         classifiers=[
             'Environment :: Console',
             'Operating System :: OS Independent',
-            'Programming Language :: Python',
-            'Topic :: SMS'],
+            'Programming Language :: Python'],
         keywords=KEYWORDS,
         install_requires=INSTALL_REQUIRES,
         entry_points=ENTRY_POINTS,
