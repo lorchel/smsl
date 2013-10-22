@@ -4,9 +4,9 @@
 #  Purpose: Installation script for smsl tool for sending SMS via HTML SMSlink
 #   Author: Tom Richter
 #    Email: lorchel@gmx.de
-#  License: GPLv3
+#  License: MIT license
 #
-# Copyright (C) 2012 Tom Richter
+# Copyright (C) 2012-2013 Tom Richter
 #---------------------------------------------------------------------
 """
 Tool for sending SMS via HTML SMSlink
@@ -32,7 +32,7 @@ VERSION = '0.0.3'
 NAME = 'smsl'
 AUTHOR = 'Tom Richter'
 AUTHOR_EMAIL = 'lorchel@gmx.de'
-LICENSE = 'GNU General Public License, Version 3 (GPLv3)'
+LICENSE = 'MIT license'
 KEYWORDS = ['send', 'sms', 'mail', 'smslisto.com']
 INSTALL_REQUIRES = ['setuptools']
 ENTRY_POINTS = {'console_scripts': ['send = smsl:main']}

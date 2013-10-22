@@ -4,9 +4,9 @@
 #  Purpose: Client for sending SMS via HTML SMSlink
 #   Author: Tom Richter
 #    Email: lorchel@gmx.de
-#  License: GPLv3
+#  License: MIT license
 #
-# Copyright (C) 2012 Tom Richter
+# Copyright (C) 2012-2013 Tom Richter
 #---------------------------------------------------------------------
 """
 Tool for sending SMS via HTML SMSlink
@@ -44,7 +44,7 @@ If you don't want your password to be saved on your harddisk in plain letters
 you can comment out this option and indicate it with the command line option
 '-p'. Anyway the created link will include your password in plain letters
 and it will be send over your internet connection. This means don't use an
-expensive password on your SMSLISTO account when using this tool. 
+expensive password on your SMSLISTO account when using this tool.
 
 By the way you need to be registered at SMSLISTO and you need to have some money
 on your account. The tool uses the HTML SMSlink service.
@@ -72,8 +72,8 @@ dude = +1234567890
 [ContactsCSV]
 # Add the full path to your csv file if you want to search there for mobile
 # numbers. Column names have to be in the first row in this file.
-#file = 
-#colreceiver = column header for 'name of receiver' column 
+#file =
+#colreceiver = column header for 'name of receiver' column
 #colnumber = column header for 'number of receiver' column
 
 [example_user]
@@ -108,7 +108,7 @@ class BColors:
                       self.WARNING, self.FAIL, self.ENDC]:
             text = text.replace(color, '')
         return text
-        
+
 bcolors = BColors()
 
 class AnswerSMSLinkHTMLParser(HTMLParser):
@@ -233,7 +233,7 @@ def get_send_args(config, to, message, test=False, default_user=None):
                config.get('Settings', 'url', raw=True))
     except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
         raise SmslError('Error when reading url from config file.')
-    # Get phone number    
+    # Get phone number
     country = (config.get('Settings', 'country') if
                config.has_option('Settings', 'country') else None)
     # Try to find receiver and number in Contacts and csv file
@@ -311,16 +311,16 @@ def main():
     print(answer)
     if not DEBUG and not args.test and config.has_option('Settings', 'history'):
         fname = os.path.expanduser(config.get('Settings', 'history'))
-        with open(fname, 'a') as f: 
+        with open(fname, 'a') as f:
             f.write("user: %s receiver: %s msg: '%s' response: %s\n" %
                     (args.id, args.to, message, bcolors.replace(answer)))
 
 DEBUG = False
 DEBUG_answer = """
-<?xml version="1.0" encoding="utf-8"?> 
+<?xml version="1.0" encoding="utf-8"?>
 <SmsResponse>
         <version>1</version>
-        <result>1</result> 
+        <result>1</result>
         <resultstring>success</resultstring>
         <description></description>
         <partcount>1</partcount>
@@ -328,10 +328,10 @@ DEBUG_answer = """
 </SmsResponse>
 """
 DEBUG_answer2 = """
-<?xml version="1.0" encoding="utf-8"?> 
+<?xml version="1.0" encoding="utf-8"?>
 <SmsResponse>
         <version>1</version>
-        <result>0</result> 
+        <result>0</result>
         <resultstring>failure</resultstring>
         <description>Invalid number</description>
         <partcount></partcount>
