@@ -25,7 +25,9 @@ expensive password on your providers account when using this tool.
 By the way you need to be registered at your providers website and you need to
 have some money on your account. The tool uses the HTML SMSlink service.
 The script creates a link like
-```https://www.smslisto.com/myaccount/sendsms.php?username=xxx&password=xxx&from=xxx&to=xxx&text=xxx```
+```
+https://www.smslisto.com/myaccount/sendsms.php?username=xxx&password=xxx&from=xxx&to=xxx&text=xxx
+```
 and sends it to the provider.
 
 Give your thumb a break! ;)
