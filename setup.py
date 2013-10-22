@@ -33,7 +33,7 @@ NAME = 'smsl'
 AUTHOR = 'Tom Richter'
 AUTHOR_EMAIL = 'lorchel@gmx.de'
 LICENSE = 'MIT license'
-KEYWORDS = ['send', 'sms', 'mail', 'smslisto.com']
+KEYWORDS = ['send', 'sms', 'mail']
 INSTALL_REQUIRES = ['setuptools']
 ENTRY_POINTS = {'console_scripts': ['send = smsl:main']}
 
