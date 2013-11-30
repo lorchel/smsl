@@ -1,2 +1,5 @@
 *.pyc
-*.*~
+*~
+dist/
+smsl.egg-info/
+
