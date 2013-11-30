@@ -9,15 +9,24 @@ HTML SMSlink and different providers. Now sending a SMS is as far as typing:
     send dude "Hey Dude!"
 """
 
-
-from HTMLParser import HTMLParser
-import ConfigParser
+try:
+    import configparser
+    from configparser import ConfigParser as ConfigParser
+    from html.parser import HTMLParser    
+    from urllib.parse import urlencode
+    from urllib.request import urlopen    
+    TRANS = (str.maketrans(str.maketrans('', '', ' -()')),)
+except ImportError:
+    import ConfigParser as configparser
+    from ConfigParser import SafeConfigParser as ConfigParser
+    from HTMLParser import HTMLParser
+    from urllib import urlencode, urlopen
+    TRANS = (None, ' -()')
 import argparse
 import csv
 import getpass
 import os
 import sys
-import urllib
 
 
 CONFIG_FILENAME = os.path.expanduser(os.path.join('~', '.config', 'smsl.cfg'))
@@ -78,8 +87,8 @@ from = Your username or your verified phone number
 
 def create_url_smslisto(username, password, from_, to, message):
     url = 'https://www.smslisto.com/myaccount/sendsms.php?'
-    params = urllib.urlencode({'username': username, 'password': password,
-                               'from': from_, 'to': to, 'text': message})
+    params = urlencode({'username': username, 'password': password,
+                        'from': from_, 'to': to, 'text': message})
     return url + params
 
 PROVIDERS = {'smslisto': create_url_smslisto}
@@ -147,11 +156,11 @@ def send_sms(send_args, provider, test=False):
     elif DEBUG:
         answer = DEBUG_answer
     else:
-        url_answer = urllib.urlopen(url)
+        url_answer = urlopen(url)
         answer = url_answer.read()
         url_answer.close()
     parser = AnswerSMSLinkHTMLParser()
-    parser.feed(answer)
+    parser.feed(answer.decode('utf-8'))
     parser.close()
     succes = parser.result == '1'
     return succes, ('Answer of server: %s%s %s %s' %
@@ -164,7 +173,7 @@ def send_sms(send_args, provider, test=False):
 
 def get_config():
     """Read config from file or create example config file"""
-    config = ConfigParser.SafeConfigParser()
+    config = ConfigParser()
     if not config.read([CONFIG_FILENAME, CONFIG_FILENAME_ALT]):
         dirname = os.path.dirname(CONFIG_FILENAME)
         if not os.path.exists(dirname):
@@ -176,7 +185,7 @@ def get_config():
 
 def is_phone_number(phone, accept_zero=False):
     """Return if phone is a valid phone number."""
-    p = phone.translate(None, ' -()')
+    p = phone.translate(*TRANS)
     return (p.startswith('+') and p[1:].isdigit() or
             p[0] == '0' and p.isdigit() and accept_zero)
 
@@ -192,7 +201,7 @@ def read_csv(config, to=None, country=None):
                         else None)
         colnumber = config.get('ContactsCSV', 'colnumber').strip()
         try:
-            with open(database, 'rb') as f:
+            with open(database, 'r') as f:
                 reader = csv.DictReader(f, skipinitialspace=True)
                 if to:
                     for row in reader:
@@ -240,7 +249,7 @@ def get_send_args(config, to, message, test=False, default_user=None):
             return (config.get(default_user, option, raw=raw) if
                     config.has_option(default_user, option) else
                     config.get('Settings', option, raw=raw))
-        except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+        except (configparser.NoSectionError, configparser.NoOptionError):
             raise SmslError('Error when reading %s from config file.' % option)
     user = get_option('username')
     from_ = get_option('from')
@@ -257,7 +266,7 @@ def get_send_args(config, to, message, test=False, default_user=None):
     if not is_phone_number(to, country):
         raise SmslError('Receiver is no valid phone number or contact not '
                         'found in config file or CSV file.')
-    to = to.translate(None, ' -()')
+    to = to.translate(*TRANS)
     msg = ''
     if to[0] == '0':
         to = to.replace('0', country, 1)
@@ -330,7 +339,7 @@ def main():
                     (args.id, args.to, message, bcolors.replace(answer)))
 
 DEBUG = False
-DEBUG_answer = """
+DEBUG_answer = b"""
 <?xml version="1.0" encoding="utf-8"?>
 <SmsResponse>
         <version>1</version>
@@ -341,7 +350,7 @@ DEBUG_answer = """
         <endcause>fail</endcause>
 </SmsResponse>
 """
-DEBUG_answer2 = """
+DEBUG_answer2 = b"""
 <?xml version="1.0" encoding="utf-8"?>
 <SmsResponse>
         <version>1</version>
