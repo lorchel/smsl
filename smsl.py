@@ -1,13 +1,4 @@
 #!/usr/bin/env python
-#-------------------------------------------------------------------
-# Filename: smsl.py
-#  Purpose: Client for sending SMS via HTML SMSlink
-#   Author: Tom Richter
-#    Email: lorchel@gmx.de
-#  License: MIT license
-#
-# Copyright (C) 2012-2013 Tom Richter
-#---------------------------------------------------------------------
 """
 # SMSL
 ### Tool for sending SMS via HTML SMSlink

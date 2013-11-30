@@ -1,12 +1,15 @@
-# SMSL
-### Tool for sending SMS via HTML SMSlink
+SMSL
+====
+Tool for sending SMS via HTML SMSlink
+-------------------------------------
 
 This is a command line utility for sending short messages with the help of
-HTML SMSlink and different providers. Now sending a SMS is as far as typing:
+HTML SMSlink and different providers. Now sending a SMS is as far as typing: ::
 
     send dude "Hey Dude!"
 
-Supported providers are: smslisto.com
+Tested providers are: smslisto.com
+
 Please contact the developers to add support for other providers.
 
 At the first start an example configuration file at the path
@@ -25,20 +28,23 @@ expensive password on your providers account when using this tool.
 By the way you need to be registered at your providers website and you need to
 have some money on your account. The tool uses the HTML SMSlink service.
 The script creates a link like
-```
-https://www.smslisto.com/myaccount/sendsms.php?username=xxx&password=xxx&from=xxx&to=xxx&text=xxx
-```
+
+``https://www.smslisto.com/myaccount/sendsms.php?username=xxx&password=xxx&from=xxx&to=xxx&text=xxx``
+
 and sends it to the provider.
 
 Give your thumb a break! ;)
 
 
-### Requirements
+Requirements
+------------
 * python 2.7 or python >3.2
 
-### Installation
-* run `pip install smsl` or
-* download source and run `python setup.py install`
+Installation
+------------
+* run ``pip install smsl`` or
+* download source and run ``python setup.py install``
 
-### Usage
-Try `send -h`.
+Usage
+-----
+Try ``send -h``.

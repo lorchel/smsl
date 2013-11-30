@@ -1,24 +1,4 @@
 #!/usr/bin/env python
-#-------------------------------------------------------------------
-# Filename: setup.py
-#  Purpose: Installation script for smsl tool for sending SMS via HTML SMSlink
-#   Author: Tom Richter
-#    Email: lorchel@gmx.de
-#  License: MIT license
-#
-# Copyright (C) 2012-2013 Tom Richter
-#---------------------------------------------------------------------
-"""
-SMSL
-====
-Tool for sending SMS via HTML SMSlink
--------------------------------------
-
-This is a command line utility for sending short messages with the help of
-HTML SMSlink and different providers. Now sending a SMS is as far as typing:
-
-``send dude "Hey Dude!"``
-"""
 
 from setuptools import setup
 import os
@@ -27,7 +7,11 @@ import sys
 
 
 LOCAL_PATH = os.path.abspath(os.path.dirname(__file__))
-VERSION = '0.2'
+VERSION = '0.3-dev'
+with open('README.rst') as f:
+    README = f.read()
+    DESCRIPTION = README.split('\n')[2]
+    LONG_DESCRIPTION = '\n'.join(README.split('\n')[5:])
 
 
 def convert2to3():
@@ -58,16 +42,17 @@ if sys.version_info.major == 3:
 # setup package
 setup(name='smsl',
       version=VERSION,
-      description='Tool for sending SMS via HTML SMSlink',
-      long_description=__doc__,
+      description=DESCRIPTION,
+      long_description=LONG_DESCRIPTION,
       url='https://github.com/lorchel/smsl',
       author='Tom Richter',
       author_email='lorchel@gmx.de',
-      license='MIT license',
+      license='MIT',
       platforms='OS Independent',
       keywords=['send', 'sms', 'mail'],
       install_requires=['setuptools'],
       entry_points={'console_scripts': ['send = smsl:main']},
+      include_data=True,
       #use2to3=True,
       py_modules=['smsl']
       )
