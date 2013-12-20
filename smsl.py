@@ -336,7 +336,7 @@ def main():
         fname = os.path.expanduser(config.get('Settings', 'history'))
         with open(fname, 'a') as f:
             f.write("user: %s receiver: %s msg: '%s' response: %s\n" %
-                    (args.id, args.to, message, bcolors.replace(answer)))
+                    (args.id, args.to, message, str(bcolors.replace(answer))))
 
 DEBUG = False
 DEBUG_answer = b"""
