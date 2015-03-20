@@ -13,14 +13,13 @@ try:
     import configparser
     from configparser import ConfigParser as ConfigParser
     from html.parser import HTMLParser    
-    from urllib.parse import urlencode
     from urllib.request import urlopen    
     TRANS = (str.maketrans(str.maketrans('', '', ' -()')),)
 except ImportError:
     import ConfigParser as configparser
     from ConfigParser import SafeConfigParser as ConfigParser
     from HTMLParser import HTMLParser
-    from urllib import urlencode, urlopen
+    from urllib import urlopen
     TRANS = (None, ' -()')
 import argparse
 import csv
@@ -85,13 +84,11 @@ from = Your username or your verified phone number
 """
 
 
-def create_url_smslisto(username, password, from_, to, message):
-    url = 'https://www.smslisto.com/myaccount/sendsms.php?'
-    params = urlencode({'username': username, 'password': password,
-                        'from': from_, 'to': to, 'text': message})
-    return url + params
-
-PROVIDERS = {'smslisto': create_url_smslisto}
+PROVIDERS = {
+    'smslisto':
+        ('https://www.smslisto.com/myaccount/sendsms.php?username={user}&'
+         'password={pw}&from={caller}&to={to}&text={text}')
+     }
 
 
 class SmslError(Exception):
@@ -147,12 +144,13 @@ class AnswerSMSLinkHTMLParser(HTMLParser):
         self._tag = ''
 
 
-def send_sms(send_args, provider, test=False):
+def send_sms(url, text, user=None, pw=None, caller=None, to=None, test=False):
     """Send SMS with a HTML SMSlink."""
-    get_url = PROVIDERS[provider]
-    url = get_url(*send_args)
+    if url in PROVIDERS:
+        url = PROVIDERS[url]
+    url = url.format(text=text, user=user, pw=pw, caller=caller, to=to)
     if test:
-        return True, 'Constructed url:\n%s' % url
+        return True, 'Constructed url: %s' % url
     elif DEBUG:
         answer = DEBUG_answer
     else:
@@ -233,10 +231,10 @@ def get_all_contacts(config):
                   read_csv(config) or [])
 
 
-def get_send_args(config, to, message, test=False, default_user=None):
+def get_send_args(config, to, text, test=False, default_user=None):
     """Get arguments from config or args and raise SmslError if necessary."""
-    if not message:
-        raise SmslError('Your message is empty.')
+    if not text:
+        raise SmslError('Your message text is empty.')
     if not default_user and not config.has_option('Settings', 'default_user'):
         raise SmslError("The user has to be given as argument with -i "
                         "or has to be defined "
@@ -252,10 +250,10 @@ def get_send_args(config, to, message, test=False, default_user=None):
         except (configparser.NoSectionError, configparser.NoOptionError):
             raise SmslError('Error when reading %s from config file.' % option)
     user = get_option('username')
-    from_ = get_option('from')
-    provider = get_option('provider')
-    if provider not in PROVIDERS:
-        raise SmslError('Unknown provider: %s' % provider)
+    caller = get_option('from')
+    url = get_option('provider')
+    if url not in PROVIDERS and '?' not in url:
+        raise SmslError('Unknown provider or not valid url: %s' % url)
     # Get phone number
     country = get_option('country')
     # Try to find receiver and number in Contacts and csv file
@@ -275,7 +273,7 @@ def get_send_args(config, to, message, test=False, default_user=None):
         pw = get_option('password')
     except SmslError:
         pw = getpass.getpass('Please enter your provider password: ')
-    return (user, pw, from_, to, message), provider, dict(test=test), msg
+    return dict(url=url, user=user, pw=pw, caller=caller, to=to, text=text, test=test), msg
 
 
 def main():
@@ -290,8 +288,8 @@ def main():
 
     parser.add_argument('to', nargs='?',
                         help='Number or contact you wish to send the sms to.')
-    parser.add_argument('message', nargs='*',
-                        help='The message you want to send. Use quotes! '
+    parser.add_argument('text', nargs='*',
+                        help='The message text you want to send. Use quotes! '
                         'Otherwise there will be errors when using *? and '
                         'other special characters.')
     parser.add_argument('-i', '--id', default=default_user,
@@ -306,9 +304,9 @@ def main():
     parser.add_argument('-s', '--show', action='store_true',
                         help='Show all available contacts.')
     args = parser.parse_args()
-    message = ' '.join(args.message)
+    text = ' '.join(args.text)
     if args.count:
-        N = len(message)
+        N = len(text)
         print('The message has %d characters. These are %d sms with 160 (145) '
               'characters' % (N, 1 if N <= 160 else (N - 160 - 1) // 145 + 2))
         return
@@ -323,20 +321,23 @@ def main():
             print('No contacts found.')
         return
     try:
-        send_args, provider, send_kwargs, msg = get_send_args(
-            config, args.to, message, args.test, args.id)
+        send_kwargs, msg = get_send_args(
+            config, args.to, text, args.test, args.id)
         if msg:
             print(msg)
     except SmslError as ex:
         sys.exit(ex)
-    result, answer = send_sms(send_args, provider, **send_kwargs)
+    result, answer = send_sms(**send_kwargs)
     print(answer)
-    if (not DEBUG and not args.test and
-            config.has_option('Settings', 'history')):
-        fname = os.path.expanduser(config.get('Settings', 'history'))
-        with open(fname, 'a') as f:
-            f.write("user: %s receiver: %s msg: '%s' response: %s\n" %
-                    (args.id, args.to, message, str(bcolors.replace(answer))))
+    if DEBUG or (not args.test and config.has_option('Settings', 'history')):
+        log_msg = ("user: %s receiver: %s msg: '%s' response: %s\n" %
+                   (args.id, args.to, text, str(bcolors.replace(answer))))
+        if DEBUG:
+            print(log_msg)
+        else:
+            fname = os.path.expanduser(config.get('Settings', 'history'))
+            with open(fname, 'a') as f:
+                f.write(log_msg)
 
 DEBUG = False
 DEBUG_answer = b"""

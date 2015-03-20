@@ -31,6 +31,11 @@ The script creates a link like
 ``https://www.smslisto.com/myaccount/sendsms.php?username=xxx&password=xxx&from=xxx&to=xxx&text=xxx``
 and sends it to the provider.
 
+Alternatively, you can use the send_sms function in Python code::
+
+    from smsl import send_sms
+    send_sms(url, text, user='test', pw='test', caller='me', to=012, test=False)
+
 Give your thumb a break! ;)
 
 
