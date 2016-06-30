@@ -12,13 +12,11 @@ HTML SMSlink and different providers. Now sending a SMS is as far as typing:
 try:
     import configparser
     from configparser import ConfigParser as ConfigParser
-    from html.parser import HTMLParser    
-    from urllib.request import urlopen    
+    from urllib.request import urlopen
     TRANS = (str.maketrans(str.maketrans('', '', ' -()')),)
 except ImportError:
     import ConfigParser as configparser
     from ConfigParser import SafeConfigParser as ConfigParser
-    from HTMLParser import HTMLParser
     from urllib import urlopen
     TRANS = (None, ' -()')
 import argparse
@@ -31,15 +29,13 @@ import sys
 CONFIG_FILENAME = os.path.expanduser(os.path.join('~', '.config', 'smsl.cfg'))
 CONFIG_FILENAME_ALT = os.path.expanduser(os.path.join('~', '.smsl.cfg'))
 EPILOG = """
-Supported providers are: smslisto.com
-Please contact the developers to add support for other providers.
-
 At the first start an example configuration file at the path
 %s will be created. Feel free to adapt the file to your needs.
 You can add new contacts, new users and a csv file which will additionally
 be searched for contacts. All contacts are shared between the users.
-You can add your providers username, password and from information, so
-that you don't need to enter it every time you want to send a short message.
+You can add your providers urls (one example url is provided), password and
+caller information, so that you don't need to enter it every time you want to
+send a short message.
 
 If you don't want your password to be saved on your harddisk in plain letters
 you can comment out this option and enter it each time you send a SMS.
@@ -48,7 +44,7 @@ and it will be send over your internet connection. This means don't use an
 expensive password on your providers account when using this tool.
 
 By the way you need to be registered at your providers website and you need to
-have some money on your account. The tool uses the HTML SMSlink service.
+have some money on your account. The tool uses the HTML API.
 The script creates a link like
 https://www.smslisto.com/myaccount/sendsms.php?username=xxx&password=xxx&
 from=xxx&to=xxx&text=xxx
@@ -63,7 +59,7 @@ CONFIG_EXAMPLE = """
 
 [Settings]
 default_user = example_user
-provider = smslisto
+#url = https://www.smslisto.com/myaccount/sendsms.php?username={user}&password={pw}&from={caller}&to={to}&text={text}
 country = +1
 #history = ~/.config/smsl_hist.txt # uncomment for history of sent sms
 
@@ -84,89 +80,20 @@ from = Your username or your verified phone number
 """
 
 
-PROVIDERS = {
-    'smslisto':
-        ('https://www.smslisto.com/myaccount/sendsms.php?username={user}&'
-         'password={pw}&from={caller}&to={to}&text={text}')
-     }
-
-
 class SmslError(Exception):
     pass
 
 
-#http://stackoverflow.com/questions/287871/print-in-terminal-with-colors-
-#using-python
-class BColors:
-    """Colored text in terminal"""
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-
-    def disable(self):
-        self.HEADER = ''
-        self.OKBLUE = ''
-        self.OKGREEN = ''
-        self.WARNING = ''
-        self.FAIL = ''
-        self.ENDC = ''
-
-    def replace(self, text):
-        for color in [self.HEADER, self.OKBLUE, self.OKGREEN,
-                      self.WARNING, self.FAIL, self.ENDC]:
-            text = text.replace(color, '')
-        return text
-
-bcolors = BColors()
-
-
-class AnswerSMSLinkHTMLParser(HTMLParser):
-    """HTMLParser to read answer from server (currently just smslisto.com)"""
-    tags = ('result', 'resultstring', 'description', 'partcount', 'endcause')
-
-    def __init__(self):
-        HTMLParser.__init__(self)
-        self._tag = ''
-
-    def handle_starttag(self, tag, attrs):
-        self._tag = tag
-        if tag in self.tags:
-            setattr(self, tag, '')
-
-    def handle_data(self, data):
-        if self._tag in self.tags:
-            setattr(self, self._tag, data)
-
-    def handle_endtag(self, tag):
-        self._tag = ''
-
-
 def send_sms(url, text, user=None, pw=None, caller=None, to=None, test=False):
     """Send SMS with a HTML SMSlink."""
-    if url in PROVIDERS:
-        url = PROVIDERS[url]
     url = url.format(text=text, user=user, pw=pw, caller=caller, to=to)
     if test:
-        return True, 'Constructed url: %s' % url
-    elif DEBUG:
-        answer = DEBUG_answer
+        answer = 'Constructed url: %s' % url
     else:
         url_answer = urlopen(url)
         answer = url_answer.read()
         url_answer.close()
-    parser = AnswerSMSLinkHTMLParser()
-    parser.feed(answer.decode('utf-8'))
-    parser.close()
-    succes = parser.result == '1'
-    return succes, ('Answer of server: %s%s %s %s' %
-                    (bcolors.OKBLUE, parser.resultstring, parser.description,
-                     bcolors.ENDC) if succes else
-                    'Answer of server: %s%s - %s%s' %
-                    (bcolors.FAIL, parser.resultstring, parser.description,
-                     bcolors.ENDC))
+    return answer
 
 
 def get_config():
@@ -251,9 +178,9 @@ def get_send_args(config, to, text, test=False, default_user=None):
             raise SmslError('Error when reading %s from config file.' % option)
     user = get_option('username')
     caller = get_option('from')
-    url = get_option('provider')
-    if url not in PROVIDERS and '?' not in url:
-        raise SmslError('Unknown provider or not valid url: %s' % url)
+    url = get_option('url')
+    if '?' not in url:
+        raise SmslError('No valid request url: %s' % url)
     # Get phone number
     country = get_option('country')
     # Try to find receiver and number in Contacts and csv file
@@ -273,7 +200,9 @@ def get_send_args(config, to, text, test=False, default_user=None):
         pw = get_option('password')
     except SmslError:
         pw = getpass.getpass('Please enter your provider password: ')
-    return dict(url=url, user=user, pw=pw, caller=caller, to=to, text=text, test=test), msg
+    kw = dict(url=url, user=user, pw=pw, caller=caller, to=to, text=text,
+              test=test)
+    return kw, msg
 
 
 def main():
@@ -327,41 +256,15 @@ def main():
             print(msg)
     except SmslError as ex:
         sys.exit(ex)
-    result, answer = send_sms(**send_kwargs)
+    answer = send_sms(**send_kwargs)
     print(answer)
-    if DEBUG or (not args.test and config.has_option('Settings', 'history')):
+    if not args.test and config.has_option('Settings', 'history'):
         log_msg = ("user: %s receiver: %s msg: '%s' response: %s\n" %
-                   (args.id, args.to, text, str(bcolors.replace(answer))))
-        if DEBUG:
-            print(log_msg)
-        else:
-            fname = os.path.expanduser(config.get('Settings', 'history'))
-            with open(fname, 'a') as f:
-                f.write(log_msg)
+                   (args.id, args.to, text, answer))
+        fname = os.path.expanduser(config.get('Settings', 'history'))
+        with open(fname, 'a') as f:
+            f.write(log_msg)
 
-DEBUG = False
-DEBUG_answer = b"""
-<?xml version="1.0" encoding="utf-8"?>
-<SmsResponse>
-        <version>1</version>
-        <result>1</result>
-        <resultstring>success</resultstring>
-        <description></description>
-        <partcount>1</partcount>
-        <endcause>fail</endcause>
-</SmsResponse>
-"""
-DEBUG_answer2 = b"""
-<?xml version="1.0" encoding="utf-8"?>
-<SmsResponse>
-        <version>1</version>
-        <result>0</result>
-        <resultstring>failure</resultstring>
-        <description>Invalid number</description>
-        <partcount></partcount>
-        <endcause>19</endcause>
-</SmsResponse>
-"""
 
 if __name__ == '__main__':
     main()
