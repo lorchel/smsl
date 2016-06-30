@@ -8,10 +8,6 @@ HTML SMSlink and different providers. Now sending a SMS is as far as typing: ::
 
     send dude "Hey Dude!"
 
-Tested providers are: smslisto.com
-
-Please contact the developers to add support for other providers.
-
 At the first start an example configuration file at the path
 ``~/.config/smsl.cfg`` will be created. Feel free to adapt the file to your needs.
 You can add new contacts, new users and a csv file which will additionally
