@@ -2,7 +2,7 @@
 
 from setuptools import setup
 
-VERSION = '0.6'
+VERSION = '0.7'
 with open('README.rst') as f:
     README = f.read()
     DESCRIPTION = README.split('\n')[2]
