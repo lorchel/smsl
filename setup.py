@@ -2,7 +2,7 @@
 
 from setuptools import setup
 
-VERSION = '0.7'
+VERSION = '0.8'
 with open('README.rst') as f:
     README = f.read()
     DESCRIPTION = README.split('\n')[2]
@@ -21,6 +21,6 @@ setup(name='smsl',
       keywords=['send', 'sms', 'mail'],
       install_requires=['setuptools'],
       entry_points={'console_scripts': ['send = smsl:main']},
-      include_package_data = True,
+      include_package_data=True,
       py_modules=['smsl']
       )
