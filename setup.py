@@ -8,6 +8,7 @@ with open('README.rst') as f:
     DESCRIPTION = README.split('\n')[2]
     LONG_DESCRIPTION = '\n'.join(README.split('\n')[5:])
 
+
 # setup package
 setup(name='smsl',
       version=VERSION,
@@ -17,6 +18,7 @@ setup(name='smsl',
       author='Tom Richter',
       author_email='lorchel@gmx.de',
       license='MIT',
+      classifiers=['Programming Language :: Python :: 3'],
       platforms='OS Independent',
       keywords=['send', 'sms', 'mail'],
       install_requires=['setuptools'],

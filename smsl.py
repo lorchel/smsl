@@ -17,10 +17,16 @@ import re
 
 try:
     from urllib.request import urlopen
+    from urllib.parse import quote_plus
     TRANS = (str.maketrans(str.maketrans('', '', ' -()')),)
 except ImportError:
-    from urllib import urlopen
+    from urllib import urlopen, quote_plus
     TRANS = (None, ' -()')
+
+
+def _sanitize(s):
+    return str(s).translate(*TRANS).lower()
+
 
 CONFIG = os.path.expanduser(os.path.join('~', '.config', 'smsl.json'))
 EPILOG = """
@@ -89,7 +95,7 @@ def read_config(fname):
         with open(fname, 'wb') as f:
             f.write(CONFIG_EXAMPLE.strip('\n'))
     try:
-        with open(fname) as f:
+        with open(fname, 'r') as f:
             return json.load(f, cls=ConfigJSONDecoder)
     except ValueError as ex:
         raise SmslError('Error while parsing the configuration: %s' % ex)
@@ -101,43 +107,41 @@ def get_contacts(config):
         subconf = config['contacts_csv']
         database = os.path.expanduser(subconf['file'])
         colreceiver = subconf['colreceiver'].strip()
-        colreceiver2 = subconf.get('colreceiver2', '').strip()
         colnumber = subconf['colnumber'].strip()
     except KeyError:
-        return contacts
-    try:
-        with open(database, 'r') as f:
-            reader = csv.DictReader(f, skipinitialspace=True)
-            contacts2 = {row[colreceiver]: row[colnumber]
-                         for row in reader if row[colreceiver]}
-            contacts2.update(contacts)
-            if colreceiver2:
-                contacts2.update({row[colreceiver2]: row[colnumber]
-                                  for row in reader if row[colreceiver2]})
-            return contacts2
-    except IOError:
-        raise SmslError('CSV file does not exist at %s.' % database)
-    except (csv.Error, KeyError):
-        raise SmslError('Error while parsing the CSV file %s.' %
-                        database)
+        pass
+    else:
+        try:
+            with open(database, 'r') as f:
+                reader = csv.DictReader(f, skipinitialspace=True)
+                contacts2 = {row[colreceiver]: row[colnumber]
+                             for row in reader if row[colreceiver]}
+                contacts2.update(contacts)
+                contacts = contacts2
+        except IOError:
+            raise SmslError('CSV file does not exist at %s.' % database)
+        except (csv.Error, KeyError):
+            raise SmslError('Error while parsing the CSV file %s.' %
+                            database)
+    return contacts
 
 
 def transform_number(number, contacts, country_code=None):
-    onumber = number
-    number = number.translate(*TRANS)
+    number = _sanitize(number)
+    contacts = {_sanitize(rec): number for rec, number in contacts.items()}
     if number in contacts:
-        number = contacts[number]
+        number = _sanitize(str(contacts[number]))
     if number.startswith('0') and country_code is not None:
         number = number.replace('0', country_code, 1)
     if not (number.startswith('+') and number[1:].isdigit() or
             number.isdigit()):
-        raise SmslError('%s is not a valid phone number' % onumber)
+        raise SmslError('%s is not a valid phone number' % number)
     return number
 
 
 def send_sms(url, text, to, test=False, **kwargs):
     """Send SMS with a HTML SMSlink."""
-    url = url.format(text=text, to=to, **kwargs)
+    url = url.format(text=quote_plus(text), to=to, **kwargs)
     if test:
         answer = 'Constructed url: %s' % url
     else:
@@ -212,12 +216,12 @@ def main():
                for n in args.to.split(',')]
     to = ','.join(numbers)
     options = parser2.parse_args(remaining_args)
-    answer = send_sms(url, text, to, test=args.text, **vars(options))
+    answer = send_sms(url, text, to, test=args.test, **vars(options))
     if prof.get('print_answer', True) or args.test:
         print(answer)
     if not args.test and prof.get('history'):
         log_msg = ("profile: %s receiver: %s msg: '%s' response: %s\n" %
-                   (args.profile, to, text, answer))
+                   (str(args.profile), args.to, text, str(answer)))
         fname = os.path.expanduser(prof['history'])
         with open(fname, 'a') as f:
             f.write(log_msg)
